@@ -47,7 +47,18 @@ def _addr_key(addr: Address) -> str:
     return str(addr)
 
 
-def _parse_deps(depends_on: str) -> list:
+def _norm_id(intent_id) -> str:
+    # The CLI/SDK coerces numeric-looking args to int, but node keys are
+    # strings. Normalize any incoming id back to str so TreeMap lookups work.
+    return str(intent_id)
+
+
+def _parse_deps(depends_on) -> list:
+    # The CLI coerces empty strings to int 0. A non-string here means "no deps
+    # were passed", NOT a dependency on node 0. Pass deps as a string id, or a
+    # comma-separated list like "0,1", to reference real nodes.
+    if not isinstance(depends_on, str):
+        return []
     return [d.strip() for d in depends_on.split(",") if d.strip()]
 
 
@@ -67,8 +78,14 @@ class MorphosIntentGraph(gl.Contract):
     # ------------------------------------------------------------------
 
     @gl.public.write
-    def create_intent(self, text: str, context_url: str, depends_on: str) -> str:
-        text = text.strip()
+    def create_intent(self, text: str, context_url: str = "", depends_on: str = "") -> str:
+        # Omit context_url / depends_on for an intent with no live context or
+        # no dependencies. Don't pass "" explicitly: the CLI coerces empty
+        # strings to int 0.
+        context_url = context_url if isinstance(context_url, str) else ""
+        if not context_url.startswith("http"):
+            context_url = ""
+        text = str(text).strip()
         if not text:
             raise Exception("intent text required")
         if len(text) > 2000:
@@ -96,6 +113,7 @@ class MorphosIntentGraph(gl.Contract):
 
     @gl.public.write
     def deprecate_intent(self, intent_id: str) -> None:
+        intent_id = _norm_id(intent_id)
         if intent_id not in self.nodes:
             raise Exception("unknown intent")
         node = self.nodes[intent_id]
@@ -112,6 +130,7 @@ class MorphosIntentGraph(gl.Contract):
 
     @gl.public.write
     def reevaluate(self, intent_id: str) -> None:
+        intent_id = _norm_id(intent_id)
         if intent_id not in self.nodes:
             raise Exception("unknown intent")
         node = self.nodes[intent_id]
@@ -236,6 +255,7 @@ No markdown, no code fences, no extra text.
 
     @gl.public.view
     def read_intent(self, intent_id: str) -> dict:
+        intent_id = _norm_id(intent_id)
         if intent_id not in self.nodes:
             return {"exists": False}
         node = self.nodes[intent_id]
@@ -255,6 +275,7 @@ No markdown, no code fences, no extra text.
 
     @gl.public.view
     def read_history(self, intent_id: str) -> list:
+        intent_id = _norm_id(intent_id)
         if intent_id not in self.nodes:
             return []
         return json.loads(self.nodes[intent_id].history)

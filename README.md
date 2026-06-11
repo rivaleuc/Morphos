@@ -24,4 +24,27 @@ A deterministic VM cannot do this. Judging whether "deliver the audit before the
 ## Live Deployment
 
 - **Network:** GenLayer Bradbury
-- **Contract:** [`0xA569084CfF2C43d51aE2b54ef349B4c0d3Dcd0ea`](https://explorer-bradbury.genlayer.com/address/0xA569084CfF2C43d51aE2b54ef349B4c0d3Dcd0ea)
+- **Contract:** [`0x02Cb8B1daD4B903457184aF43EC390D3999d0C26`](https://explorer-bradbury.genlayer.com/address/0x02Cb8B1daD4B903457184aF43EC390D3999d0C26)
+
+Verified end to end: an intent ("ETH gas is cheap enough for retail today") was created, then `reevaluate` ran a real web fetch plus LLM consensus across validators. The endpoint was unreachable, so consensus dropped confidence 100 → 10, set drift to 95, and moved the node to `deprecated` with reasoning. The verdict is stored in the node history.
+
+## Calling it on Bradbury (CLI)
+
+The Bradbury RPC exposes no contract schema, so `genlayer-js` cannot see Python default arguments and the CLI coerces numeric-looking strings to int. The contract is written defensively around this:
+
+```bash
+# Create. Always pass all three args. Use " " for "no dependencies".
+genlayer write <addr> create_intent \
+  --args "ETH gas is cheap enough for retail today" \
+         "https://api.etherscan.io/api?module=gastracker&action=gasoracle" " "
+
+# Re-evaluate node 0 (runs the web fetch + LLM consensus).
+genlayer write <addr> reevaluate --args "0"
+
+# Free reads.
+genlayer call <addr> read_intent  --args "0"
+genlayer call <addr> read_history --args "0"
+genlayer call <addr> graph_stats
+```
+
+To depend on existing nodes, pass `depends_on` as a comma-separated id string, e.g. `"0,1"`.
