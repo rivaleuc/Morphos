@@ -21,7 +21,7 @@ A deterministic VM cannot do this. Judging whether "deliver the audit before the
 - Drift is an LLM-judged 0-100 scalar, not an embedding distance.
 - Validators pick their own models; the contract only defines the prompt and the validation predicate.
 
-## Live Deployment
+## Deployment
 
-- **Network:** GenLayer Bradbury
-- **Contract:** [`0x38770f5754904E99244fEE4fFF45aF905b0C62Df`](https://explorer-bradbury.genlayer.com/address/0x38770f5754904E99244fEE4fFF45aF905b0C62Df)
+- **Status:** deployed and tested on GenLayer Studio (`0x38770f5754904E99244fEE4fFF45aF905b0C62Df`)
+- **Bradbury:** not yet deployed
